@@ -1,61 +1,64 @@
+import { useState } from "react";
 import { ref, update, remove } from "firebase/database";
-import { database, auth } from "../config/firebase";
+import { database } from "../config/firebase";
+import { useAuth } from "../context/AuthContext";
 
 interface TaskActionsProps {
   taskId: string;
   status: "pending" | "completed";
-  onTaskUpdated: () => void;
 }
 
-const TaskActions = ({ taskId, status, onTaskUpdated }: TaskActionsProps) => {
-  const handleComplete = async () => {
-    if (!auth.currentUser) return;
+const TaskActions = ({ taskId, status }: TaskActionsProps) => {
+  const [loading, setLoading] = useState(false);
+  const { user } = useAuth();
+
+  const handleStatusChange = async (newStatus: "pending" | "completed") => {
+    if (!user) return;
 
     try {
-      const taskRef = ref(
-        database,
-        `users/${auth.currentUser.uid}/tasks/${taskId}`
-      );
-      await update(taskRef, {
-        status: status === "completed" ? "pending" : "completed",
-        updatedAt: new Date().toISOString(),
-      });
-      onTaskUpdated();
+      setLoading(true);
+      const taskRef = ref(database, `users/${user.uid}/tasks/${taskId}`);
+      await update(taskRef, { status: newStatus });
     } catch (error) {
-      console.error("Error updating task:", error);
+      console.error("Error updating task status:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleDelete = async () => {
-    if (!auth.currentUser) return;
+    if (!user) return;
 
     try {
-      const taskRef = ref(
-        database,
-        `users/${auth.currentUser.uid}/tasks/${taskId}`
-      );
+      setLoading(true);
+      const taskRef = ref(database, `users/${user.uid}/tasks/${taskId}`);
       await remove(taskRef);
-      onTaskUpdated();
     } catch (error) {
       console.error("Error deleting task:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="flex space-x-2">
+    <div className="flex items-center justify-end space-x-2 mt-4">
       <button
-        onClick={handleComplete}
-        className={`px-3 py-1 rounded-md text-sm ${
+        onClick={() =>
+          handleStatusChange(status === "completed" ? "pending" : "completed")
+        }
+        disabled={loading}
+        className={`px-3 py-1 text-sm rounded-md ${
           status === "completed"
             ? "bg-yellow-100 text-yellow-800 hover:bg-yellow-200"
             : "bg-green-100 text-green-800 hover:bg-green-200"
-        }`}
+        } disabled:opacity-50`}
       >
-        {status === "completed" ? "⏳ Pending" : "✅ Complete"}
+        {status === "completed" ? "⏳ Mark Pending" : "✅ Mark Complete"}
       </button>
       <button
         onClick={handleDelete}
-        className="px-3 py-1 rounded-md text-sm bg-red-100 text-red-800 hover:bg-red-200"
+        disabled={loading}
+        className="px-3 py-1 text-sm text-red-800 bg-red-100 rounded-md hover:bg-red-200 disabled:opacity-50"
       >
         🗑️ Delete
       </button>

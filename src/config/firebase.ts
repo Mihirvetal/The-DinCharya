@@ -1,7 +1,7 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
-import { getAnalytics } from 'firebase/analytics';
+import { getAnalytics, isSupported } from 'firebase/analytics';
 import { getDatabase } from 'firebase/database';
 
 const firebaseConfig = {
@@ -18,8 +18,11 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-const analytics = getAnalytics(app);
 const database = getDatabase(app);
+
+// Initialize analytics only if supported
+let analytics = null;
+isSupported().then(yes => yes && (analytics = getAnalytics(app)));
 
 console.log('Firebase initialized successfully');
 

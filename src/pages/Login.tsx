@@ -17,22 +17,34 @@ const Login = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!email || !password) {
+      setError("Please enter both email and password");
+      return;
+    }
+
     try {
       setError("");
       setLoading(true);
       await signInWithEmailAndPassword(auth, email, password);
-      navigate("/");
+      navigate("/dashboard");
     } catch (err) {
       console.error("Login error:", err);
       const firebaseError = err as AuthError;
-      if (firebaseError.code === "auth/invalid-email") {
-        setError("Invalid email address");
-      } else if (firebaseError.code === "auth/user-not-found") {
-        setError("No account found with this email");
-      } else if (firebaseError.code === "auth/wrong-password") {
-        setError("Incorrect password");
-      } else {
-        setError("Failed to login. Please check your credentials.");
+      switch (firebaseError.code) {
+        case "auth/invalid-email":
+          setError("Invalid email address");
+          break;
+        case "auth/user-not-found":
+          setError("No account found with this email");
+          break;
+        case "auth/wrong-password":
+          setError("Incorrect password");
+          break;
+        case "auth/too-many-requests":
+          setError("Too many failed attempts. Please try again later.");
+          break;
+        default:
+          setError("Failed to login. Please check your credentials.");
       }
     } finally {
       setLoading(false);
@@ -44,17 +56,30 @@ const Login = () => {
       setError("");
       setLoading(true);
       const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({
+        prompt: "select_account",
+      });
       await signInWithPopup(auth, provider);
-      navigate("/");
+      navigate("/dashboard");
     } catch (err) {
       console.error("Google login error:", err);
       const firebaseError = err as AuthError;
-      if (firebaseError.code === "auth/popup-closed-by-user") {
-        setError("Login cancelled. Please try again.");
-      } else if (firebaseError.code === "auth/popup-blocked") {
-        setError("Login popup was blocked. Please allow popups and try again.");
-      } else {
-        setError("Failed to login with Google. Please try again.");
+      switch (firebaseError.code) {
+        case "auth/popup-closed-by-user":
+          setError("Login cancelled. Please try again.");
+          break;
+        case "auth/popup-blocked":
+          setError(
+            "Login popup was blocked. Please allow popups and try again."
+          );
+          break;
+        case "auth/account-exists-with-different-credential":
+          setError(
+            "An account already exists with the same email address but different sign-in credentials."
+          );
+          break;
+        default:
+          setError("Failed to login with Google. Please try again.");
       }
     } finally {
       setLoading(false);
@@ -93,7 +118,11 @@ const Login = () => {
         <div className="w-full max-w-md space-y-8">
           <div>
             <h2 className="text-3xl font-light mb-2">Login</h2>
-            {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+            {error && (
+              <div className="bg-red-500/10 border border-red-500/20 text-red-500 px-4 py-3 rounded-lg text-sm">
+                {error}
+              </div>
+            )}
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -106,6 +135,7 @@ const Login = () => {
                   className="w-full bg-transparent border border-gray-800 rounded-lg px-4 py-3 focus:outline-none focus:border-gray-600 transition-colors"
                   placeholder="Email"
                   required
+                  disabled={loading}
                 />
               </div>
               <div>
@@ -116,6 +146,7 @@ const Login = () => {
                   className="w-full bg-transparent border border-gray-800 rounded-lg px-4 py-3 focus:outline-none focus:border-gray-600 transition-colors"
                   placeholder="Password"
                   required
+                  disabled={loading}
                 />
               </div>
             </div>
@@ -149,7 +180,12 @@ const Login = () => {
                 disabled={loading}
                 className="w-full border border-gray-800 rounded-lg px-4 py-3 flex items-center justify-center hover:border-gray-600 transition-colors disabled:opacity-50"
               >
-                
+                <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
+                  <path
+                    fill="currentColor"
+                    d="M12.545,10.239v3.821h5.445c-0.712,2.315-2.647,3.972-5.445,3.972c-3.332,0-6.033-2.701-6.033-6.032s2.701-6.032,6.033-6.032c1.498,0,2.866,0.549,3.921,1.453l2.814-2.814C17.503,2.988,15.139,2,12.545,2C7.021,2,2.543,6.477,2.543,12s4.478,10,10.002,10c8.396,0,10.249-7.85,9.426-11.748L12.545,10.239z"
+                  />
+                </svg>
                 <span>Continue with Google</span>
               </button>
             </div>
