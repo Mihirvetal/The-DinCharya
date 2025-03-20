@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { createUserWithEmailAndPassword, AuthError } from "firebase/auth";
 import { auth } from "../config/firebase";
+import styles from "../styles/Register.module.css";
 
 const Register = () => {
   const [email, setEmail] = useState("");
@@ -49,98 +50,110 @@ const Register = () => {
       setLoading(false);
     }
   };
-
+// this is regisrer page
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow">
-        <div>
-          <h2 className="text-3xl font-bold text-center">Create Account</h2>
-          <p className="mt-2 text-center text-gray-600">
-            Join DinCharya to manage your tasks effectively
-          </p>
+    <div className={styles.registerContainer}>
+      {/* Left Side - Features */}
+      <div className={styles.featuresSection}>
+        <div className={styles.featuresCard}>
+          <h2 className={styles.featuresTitle}>Welcome to DinCharya</h2>
+          <ul className={styles.featuresList}>
+            <li className={styles.featureItem}>
+              <span>→</span>
+              Organize your daily tasks efficiently
+            </li>
+            <li className={styles.featureItem}>
+              <span>→</span>
+              Track your progress and achievements
+            </li>
+            <li className={styles.featureItem}>
+              <span>→</span>
+              Get personalized productivity insights
+            </li>
+            <li className={styles.featureItem}>
+              <span>→</span>
+              Stay focused and motivated
+            </li>
+          </ul>
         </div>
+      </div>
 
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded relative">
-            {error}
+      {/* Right Side - Register Form */}
+      <div className={styles.registerSection}>
+        <div className={styles.registerContent}>
+          <div className={styles.registerHeader}>
+            <h2 className={styles.registerTitle}>Create Account</h2>
+            <p className={styles.registerSubtitle}>
+              Join DinCharya to manage your tasks effectively
+            </p>
           </div>
-        )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label
-              htmlFor="email"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Email Address
-            </label>
-            <input
-              type="email"
-              id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-              required
+          {error && <div className={styles.errorMessage}>{error}</div>}
+
+          <form onSubmit={handleSubmit} className={styles.registerForm}>
+            <div className={styles.inputGroup}>
+              <label htmlFor="email" className={styles.label}>
+                Email Address
+              </label>
+              <input
+                type="email"
+                id="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className={styles.input}
+                required
+                disabled={loading}
+                placeholder="Enter your email"
+              />
+            </div>
+
+            <div className={styles.inputGroup}>
+              <label htmlFor="password" className={styles.label}>
+                Password
+              </label>
+              <input
+                type="password"
+                id="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className={styles.input}
+                required
+                disabled={loading}
+                minLength={6}
+                placeholder="Create a password"
+              />
+            </div>
+
+            <div className={styles.inputGroup}>
+              <label htmlFor="confirmPassword" className={styles.label}>
+                Confirm Password
+              </label>
+              <input
+                type="password"
+                id="confirmPassword"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className={styles.input}
+                required
+                disabled={loading}
+                minLength={6}
+                placeholder="Confirm your password"
+              />
+            </div>
+
+            <button
+              type="submit"
+              className={styles.submitButton}
               disabled={loading}
-            />
-          </div>
-
-          <div>
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium text-gray-700"
             >
-              Password
-            </label>
-            <input
-              type="password"
-              id="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-              required
-              disabled={loading}
-              minLength={6}
-            />
-          </div>
+              {loading ? "Creating Account..." : "Register"}
+            </button>
+          </form>
 
-          <div>
-            <label
-              htmlFor="confirmPassword"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Confirm Password
-            </label>
-            <input
-              type="password"
-              id="confirmPassword"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-              required
-              disabled={loading}
-              minLength={6}
-            />
-          </div>
-
-          <button
-            type="submit"
-            className={`w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-              loading ? "opacity-50 cursor-not-allowed" : ""
-            }`}
-            disabled={loading}
-          >
-            {loading ? "Creating Account..." : "Register"}
-          </button>
-        </form>
-
-        <div className="text-center">
-          <p className="text-sm text-gray-600">
+          <div className={styles.loginLink}>
             Already have an account?{" "}
-            <Link to="/login" className="text-blue-600 hover:text-blue-500">
-              Login here
-            </Link>
-          </p>
+            <Link to="/login">Login here</Link>
+          </div>
         </div>
       </div>
     </div>

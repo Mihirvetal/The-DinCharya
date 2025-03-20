@@ -1,38 +1,49 @@
-import { useState } from "react";
 import { ref, update, remove } from "firebase/database";
-import { database } from "../config/firebase";
-import { useAuth } from "../context/AuthContext";
+import { database, auth } from "../config/firebase";
+import styles from "../styles/TaskActions.module.css";
+import { useState } from "react";
 
 interface TaskActionsProps {
   taskId: string;
   status: "pending" | "completed";
+  onTaskUpdated: () => void;
 }
 
-const TaskActions = ({ taskId, status }: TaskActionsProps) => {
+const TaskActions = ({ taskId, status, onTaskUpdated }: TaskActionsProps) => {
   const [loading, setLoading] = useState(false);
-  const { user } = useAuth();
 
-  const handleStatusChange = async (newStatus: "pending" | "completed") => {
-    if (!user) return;
+  const handleComplete = async () => {
+    if (!auth.currentUser) return;
 
     try {
       setLoading(true);
-      const taskRef = ref(database, `users/${user.uid}/tasks/${taskId}`);
-      await update(taskRef, { status: newStatus });
+      const taskRef = ref(
+        database,
+        `users/${auth.currentUser.uid}/tasks/${taskId}`
+      );
+      await update(taskRef, {
+        status: status === "completed" ? "pending" : "completed",
+        updatedAt: new Date().toISOString(),
+      });
+      onTaskUpdated();
     } catch (error) {
-      console.error("Error updating task status:", error);
+      console.error("Error updating task:", error);
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = async () => {
-    if (!user) return;
+    if (!auth.currentUser) return;
 
     try {
       setLoading(true);
-      const taskRef = ref(database, `users/${user.uid}/tasks/${taskId}`);
+      const taskRef = ref(
+        database,
+        `users/${auth.currentUser.uid}/tasks/${taskId}`
+      );
       await remove(taskRef);
+      onTaskUpdated();
     } catch (error) {
       console.error("Error deleting task:", error);
     } finally {
@@ -41,26 +52,28 @@ const TaskActions = ({ taskId, status }: TaskActionsProps) => {
   };
 
   return (
-    <div className="flex items-center justify-end space-x-2 mt-4">
+    <div className={styles.actionsContainer}>
       <button
-        onClick={() =>
-          handleStatusChange(status === "completed" ? "pending" : "completed")
-        }
+        onClick={handleComplete}
         disabled={loading}
-        className={`px-3 py-1 text-sm rounded-md ${
-          status === "completed"
-            ? "bg-yellow-100 text-yellow-800 hover:bg-yellow-200"
-            : "bg-green-100 text-green-800 hover:bg-green-200"
-        } disabled:opacity-50`}
+        className={`${styles.actionButton} ${
+          status === "completed" ? styles.pendingButton : styles.completeButton
+        } ${loading ? styles.loading : ""}`}
       >
-        {status === "completed" ? "⏳ Mark Pending" : "✅ Mark Complete"}
+        <span className={styles.icon}>
+          {status === "completed" ? "⏳" : "✅"}
+        </span>
+        <span>{status === "completed" ? "Pending" : "Complete"}</span>
       </button>
       <button
         onClick={handleDelete}
         disabled={loading}
-        className="px-3 py-1 text-sm text-red-800 bg-red-100 rounded-md hover:bg-red-200 disabled:opacity-50"
+        className={`${styles.actionButton} ${styles.deleteButton} ${
+          loading ? styles.loading : ""
+        }`}
       >
-        🗑️ Delete
+        <span className={styles.icon}>🗑️</span>
+        <span>Delete</span>
       </button>
     </div>
   );

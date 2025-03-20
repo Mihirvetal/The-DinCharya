@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ref, push, set } from "firebase/database";
 import { database, auth } from "../config/firebase";
+import styles from "../styles/TaskForm.module.css";
 
 interface TaskFormProps {
   onTaskAdded: () => void;
@@ -55,19 +56,16 @@ const TaskForm = ({ onTaskAdded, category }: TaskFormProps) => {
   };
 
   return (
-    <div className="bg-white shadow rounded-lg p-6 mb-6">
-      <h3 className="text-lg font-medium mb-4">Add New Task</h3>
+    <div className={styles.formContainer}>
+      <h3 className={styles.formTitle}>Add New Task</h3>
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded relative mb-4">
+        <div className={styles.errorMessage}>
           {error}
         </div>
       )}
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label
-            htmlFor="title"
-            className="block text-sm font-medium text-gray-700"
-          >
+      <form onSubmit={handleSubmit} className={styles.form}>
+        <div className={styles.inputGroup}>
+          <label htmlFor="title" className={styles.label}>
             Title
           </label>
           <input
@@ -75,34 +73,28 @@ const TaskForm = ({ onTaskAdded, category }: TaskFormProps) => {
             id="title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+            className={`${styles.input} ${loading ? styles.loading : ''}`}
             required
             disabled={loading}
             placeholder="Enter task title"
           />
         </div>
-        <div>
-          <label
-            htmlFor="description"
-            className="block text-sm font-medium text-gray-700"
-          >
+        <div className={styles.inputGroup}>
+          <label htmlFor="description" className={styles.label}>
             Description
           </label>
           <textarea
             id="description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+            className={`${styles.textarea} ${loading ? styles.loading : ''}`}
             rows={3}
             disabled={loading}
             placeholder="Enter task description"
           />
         </div>
-        <div>
-          <label
-            htmlFor="dueDate"
-            className="block text-sm font-medium text-gray-700"
-          >
+        <div className={styles.inputGroup}>
+          <label htmlFor="dueDate" className={styles.label}>
             Due Date
           </label>
           <input
@@ -110,16 +102,14 @@ const TaskForm = ({ onTaskAdded, category }: TaskFormProps) => {
             id="dueDate"
             value={dueDate}
             onChange={(e) => setDueDate(e.target.value)}
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+            className={`${styles.input} ${loading ? styles.loading : ''}`}
             required
             disabled={loading}
           />
         </div>
         <button
           type="submit"
-          className={`w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-            loading ? "opacity-50 cursor-not-allowed" : ""
-          }`}
+          className={`${styles.submitButton} ${loading ? styles.loading : ''}`}
           disabled={loading}
         >
           {loading ? "Adding Task..." : "Add Task"}

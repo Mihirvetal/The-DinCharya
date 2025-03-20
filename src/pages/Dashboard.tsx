@@ -1,29 +1,42 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { ref, onValue, off, DataSnapshot } from "firebase/database";
+import { ref, onValue, off } from "firebase/database";
 import { database } from "../config/firebase";
+import TaskForm from "../components/TaskForm";
 import TaskActions from "../components/TaskActions";
+import Logo from "../assets/react.svg";
+import styles from "../styles/Dashboard.module.css";
+
+const formatDate = (dateString: string) => {
+  const date = new Date(dateString);
+  const day = date.getDate().toString().padStart(2, '0');
+  const month = date.toLocaleString('default', { month: 'short' });
+  const year = date.getFullYear();
+  return `${day} ${month} ${year}`;
+};
 
 interface Task {
   id: string;
   title: string;
   description: string;
-  category: string;
+  category: "personal" | "business" | "future";
   dueDate: string;
   status: "pending" | "completed";
   createdAt: string;
-}
-
-interface TaskData {
-  [key: string]: Omit<Task, "id">;
+  updatedAt: string;
 }
 
 const Dashboard = () => {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<
+    "personal" | "business" | "future"
+  >("personal");
+  const [showAddTask, setShowAddTask] = useState(false);
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!user) {
@@ -33,22 +46,37 @@ const Dashboard = () => {
 
     const tasksRef = ref(database, `users/${user.uid}/tasks`);
 
-    const handleData = (snapshot: DataSnapshot) => {
-      const data = snapshot.val() as TaskData | null;
-      if (data) {
-        const tasksArray = Object.entries(data).map(([id, task]) => ({
-          id,
-          ...task,
-        }));
-        setTasks(tasksArray);
-      } else {
-        setTasks([]);
+    // Listen for changes in tasks
+    const unsubscribe = onValue(
+      tasksRef,
+      (snapshot) => {
+        const tasksData = snapshot.val();
+        if (tasksData) {
+          // Convert object to array and sort by createdAt
+          const tasksArray = Object.entries(tasksData)
+            .map(([id, task]: [string, any]) => ({
+              id,
+              ...task,
+            }))
+            .sort(
+              (a, b) =>
+                new Date(b.createdAt).getTime() -
+                new Date(a.createdAt).getTime()
+            );
+          setTasks(tasksArray);
+        } else {
+          setTasks([]);
+        }
+        setLoading(false);
+      },
+      (error) => {
+        console.error("Error fetching tasks:", error);
+        setError("Failed to load tasks. Please try again.");
+        setLoading(false);
       }
-      setLoading(false);
-    };
+    );
 
-    onValue(tasksRef, handleData);
-
+    // Cleanup subscription
     return () => {
       off(tasksRef);
     };
@@ -59,31 +87,55 @@ const Dashboard = () => {
       await logout();
       navigate("/login");
     } catch (error) {
-      console.error("Failed to log out:", error);
+      console.error("Failed to logout:", error);
     }
   };
 
+  const filteredTasks = tasks.filter(
+    (task) => task.category === selectedCategory
+  );
+
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl">Loading...</div>
+      <div className={styles.loadingContainer}>
+        <div className={styles.loadingContent}>
+          <div className={styles.loadingSpinner}>
+            <div className={styles.spinner}></div>
+            <p className={styles.loadingText}>Loading tasks...</p>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <nav className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <h1 className="text-xl font-semibold">DinCharya</h1>
+    <div className={styles.dashboardContainer}>
+      <nav className={styles.navbar}>
+        <div className={styles.navbarContent}>
+          <div className={styles.navbarInner}>
+            <div className={styles.logoContainer}>
+              <div className={styles.logoWrapper}>
+                <div className={styles.logoImage}>
+                  <img src={Logo} alt="Dincharya" />
+                </div>
+                <span className={styles.logoText}>DinCharya</span>
+              </div>
             </div>
-            <div className="flex items-center">
+            <div className={styles.navButtons}>
+              <button
+                onClick={() => setShowAddTask(!showAddTask)}
+                className={styles.addTaskButton}
+              >
+                <span className={styles.buttonIcon}>
+                  {showAddTask ? "✕" : "➕"}
+                </span>
+                {showAddTask ? "Cancel" : "Add Task"}
+              </button>
               <button
                 onClick={handleLogout}
-                className="ml-4 px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
+                className={styles.logoutButton}
               >
+                <span className={styles.buttonIcon}>🚪</span>
                 Logout
               </button>
             </div>
@@ -91,44 +143,98 @@ const Dashboard = () => {
         </div>
       </nav>
 
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">Your Tasks</h2>
-            <button
-              onClick={() => navigate("/add-task")}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-            >
-              Add Task
-            </button>
+      <div className={styles.categoryBar}>
+        <div className={styles.categoryContent}>
+          <div className={styles.categoryButtons}>
+            {(["personal", "business", "future"] as const).map((category) => (
+              <button
+                key={category}
+                onClick={() => setSelectedCategory(category)}
+                className={`${styles.categoryButton} ${
+                  selectedCategory === category ? styles.active : ""
+                }`}
+              >
+                <span>
+                  {category === "personal" && "👤"}
+                  {category === "business" && "💼"}
+                  {category === "future" && "🎯"}
+                </span>
+                <span>
+                  {category.charAt(0).toUpperCase() + category.slice(1)}
+                </span>
+              </button>
+            ))}
           </div>
+        </div>
+      </div>
 
-          {tasks.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-gray-500">
-                No tasks yet. Add your first task!
-              </p>
-            </div>
-          ) : (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {tasks.map((task) => (
-                <div
-                  key={task.id}
-                  className="bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow"
-                >
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">
-                    {task.title}
-                  </h3>
-                  <p className="text-gray-600 mb-4">{task.description}</p>
-                  <div className="flex items-center justify-between text-sm text-gray-500">
-                    <span>{task.category}</span>
-                    <span>{new Date(task.dueDate).toLocaleDateString()}</span>
-                  </div>
-                  <TaskActions taskId={task.id} status={task.status} />
-                </div>
-              ))}
-            </div>
+      <main className={styles.mainContent}>
+        <div>
+          {showAddTask && (
+            <TaskForm
+              onTaskAdded={() => setShowAddTask(false)}
+              category={selectedCategory}
+            />
           )}
+
+          <div className={styles.taskContainer}>
+            <div className={styles.taskHeader}>
+              <h2 className={styles.taskTitle}>
+                {selectedCategory.charAt(0).toUpperCase() +
+                  selectedCategory.slice(1)}{" "}
+                Tasks
+              </h2>
+            </div>
+
+            <div className={styles.taskList}>
+              {filteredTasks.length === 0 ? (
+                <div className={styles.emptyState}>
+                  <span className={styles.emptyStateIcon}>📝</span>
+                  <h3 className={styles.emptyStateTitle}>No tasks found</h3>
+                  <p className={styles.emptyStateDescription}>
+                    Get started by creating a new task
+                  </p>
+                </div>
+              ) : (
+                <div className={styles.taskGrid}>
+                  {filteredTasks.map((task) => (
+                    <div key={task.id} className={styles.taskCard}>
+                      <div className={styles.taskHeader}>
+                        <div className={styles.taskContent}>
+                          <div className={styles.taskTitleRow}>
+                            <h3 className={styles.taskTitle}>{task.title}</h3>
+                            <span
+                              className={`${styles.statusBadge} ${
+                                task.status === "completed"
+                                  ? styles.completed
+                                  : styles.pending
+                              }`}
+                            >
+                              {task.status}
+                            </span>
+                          </div>
+                          <p className={styles.taskDescription}>
+                            {task.description}
+                          </p>
+                          <div className={styles.taskDueDate}>
+                            <span className="mr-1">📅</span>
+                            <span>Due: {formatDate(task.dueDate)}</span>
+                          </div>
+                        </div>
+                        <div className={styles.taskActions}>
+                          <TaskActions
+                            taskId={task.id}
+                            status={task.status}
+                            onTaskUpdated={() => {}}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </main>
     </div>
