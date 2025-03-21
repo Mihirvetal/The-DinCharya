@@ -1,8 +1,11 @@
+
+
 .loginContainer {
   min-height: 100vh;
   display: flex;
   background-color: #000000;
   color: white;
+  font-size: 18px;
 }
 
 .featuresSection {
@@ -121,12 +124,17 @@
 
 .submitButton {
   width: 100%;
-  background-color: white;
-  color: black;
-  border-radius: 0.5rem;
-  padding: 0.75rem 1rem;
+  background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+  color: white;
+  border-radius: 0.75rem;
+  padding: 1rem;
   font-weight: 500;
-  transition: all 0.2s;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden
 }
 
 .submitButton:hover {
